@@ -3,8 +3,8 @@
 torcx profiles specify images and references.
 torcx operates on a store of image archives.
 
-An archive is a gzip-compressed tar file, containing a partial rootfs for a specific binary addon.
-torcx images are shipped as tgz archives, however they are typically custom built and tailored for torcx usages.
+An archive is a squashfs filesystem containing a partial rootfs for a specific binary addon.
+torcx images are shipped as read-only squashfs archives, however they are typically custom built and tailored for torcx usages.
 
 Image references may contain custom values as specified by the provider.
 It is recommend to use semver-compatible tags for normal release and vendor-scoped names for special purpose.

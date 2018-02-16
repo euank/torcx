@@ -11,6 +11,7 @@ It contains an ordered list of images (name + reference) to a be applied on a sy
     -(object)
       - image (string, required)
       - reference (string, required)
+      - format (string, optional, "tgz" or "squashfs", default "tgz")
 
 ## Entries
 
@@ -24,11 +25,13 @@ It contains an ordered list of images (name + reference) to a be applied on a sy
 - value/images/#/image: string, compatible with OCI image name specs.
   Name of the image to unpack.
 - value/images/#/reference: string, compatible with OCI image reference specs.
-  Referenced image must be available in the storepath, as a file name `${image}:${reference}.torcx.tgz`.
+  Referenced image must be available in the storepath, as a file name `${image}:${reference}.torcx.${format}`
+- value/images/#/format : string, either "tgz" or "squashfs" to indicate the image is stored as either a gzipped tarball or squashfs archive.
+  For backwards compatibility reasons, format will default to "tgz", but "squashfs" should be preferred for new images.
 
 ## JSON schema
 
-```
+```json
 
 {
   "$schema": "http://json-schema.org/draft-05/schema#",
@@ -51,6 +54,11 @@ It contains an ordered list of images (name + reference) to a be applied on a sy
               },
               "reference": {
                 "type": "string"
+              },
+              "format": {
+                "type": "string",
+                "default": "tgz",
+                "enum": ["tgz", "squashfs"]
               }
             },
             "required": [
