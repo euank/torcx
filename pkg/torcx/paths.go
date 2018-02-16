@@ -94,5 +94,10 @@ func (cc *CommonConfig) NextProfile() string {
 
 // ArchiveFilename is the filename (no directory) for the archive of an image.
 func (im *Image) ArchiveFilename() string {
+	return fmt.Sprintf("%s:%s.torcx.squashfs", im.Name, im.Reference)
+}
+
+// TarArchiveFilename is the filename (no directory) for the archive of an image.
+func (im *Image) TarArchiveFilename() string {
 	return fmt.Sprintf("%s:%s.torcx.tgz", im.Name, im.Reference)
 }

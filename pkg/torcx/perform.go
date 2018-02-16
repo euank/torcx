@@ -118,14 +118,23 @@ func applyImages(applyCfg *ApplyConfig, images Images) error {
 			"reference": im.Reference,
 		}
 
-		tgzArchive, err := storeCache.ArchiveFor(im)
+		archive, err := storeCache.ArchiveFor(im)
 		if err != nil {
 			logrus.WithFields(logFields).Error(err)
 			failedImages = append(failedImages, im)
 			continue
 		}
 
-		imageRoot, err := unpackTgz(applyCfg, tgzArchive.Filepath, im.Name)
+		var imageRoot string
+		switch archive.Format {
+		case ImageFormatTgz:
+			imageRoot, err = unpackTgz(applyCfg, archive.Filepath, im.Name)
+		case ImageFormatSquashfs:
+			imageRoot, err = mountSquashfs(applyCfg, archive.Filepath, im.Name)
+		default:
+			logrus.WithFields(logFields).Error("unrecognized format for archive: ", archive)
+			continue
+		}
 		if err != nil {
 			failedImages = append(failedImages, im)
 			logrus.WithFields(logFields).Error("failed to unpack: ", err)
@@ -331,6 +340,30 @@ func unpackTgz(applyCfg *ApplyConfig, tgzPath, imageName string) (string, error)
 	err = pkgtar.ChrootUntar(tr, topDir, untarCfg)
 	if err != nil {
 		return "", errors.Wrapf(err, "unpacking %q", tgzPath)
+	}
+
+	return topDir, nil
+}
+
+// mountSquashfs mounts a squashfs rootfs, returning the mounted directory.
+func mountSquashfs(applyCfg *ApplyConfig, archivePath, imageName string) (string, error) {
+	if applyCfg == nil {
+		return "", errors.New("missing apply configuration")
+	}
+
+	if archivePath == "" || imageName == "" {
+		return "", errors.New("missing unpack source")
+	}
+
+	topDir := filepath.Join(applyCfg.UnpackDir(), imageName)
+	if _, err := os.Stat(topDir); err != nil && os.IsNotExist(err) {
+		if err := os.MkdirAll(topDir, 0755); err != nil {
+			return "", err
+		}
+	}
+
+	if err := unix.Mount(archivePath, topDir, "squashfs", 0, "loop"); err != nil {
+		return "", err
 	}
 
 	return topDir, nil
