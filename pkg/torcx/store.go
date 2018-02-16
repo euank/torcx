@@ -77,6 +77,7 @@ func NewStoreCache(paths []string) (StoreCache, error) {
 		image := Image{
 			Name:      imageName,
 			Reference: imageRef,
+			Format:    imageFormat,
 		}
 		archive := Archive{image, path}
 
