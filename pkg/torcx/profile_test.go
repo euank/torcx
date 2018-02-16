@@ -21,13 +21,27 @@ import (
 	"testing"
 )
 
-var inManifest = ProfileManifestV0{
+var testTgzManifest = ProfileManifestV0{
 	Kind: "profile-manifest-v0",
 	Value: Images{
 		[]Image{
 			Image{
 				Name:      "test-name",
 				Reference: "test-reference",
+				Format:    "tgz",
+			},
+		},
+	},
+}
+
+var testSquashfsManifest = ProfileManifestV0{
+	Kind: "profile-manifest-v0",
+	Value: Images{
+		[]Image{
+			Image{
+				Name:      "test-name",
+				Reference: "test-reference",
+				Format:    "squashfs",
 			},
 		},
 	},
@@ -36,19 +50,44 @@ var inManifest = ProfileManifestV0{
 func TestGetProfile(t *testing.T) {
 	// Schema of profile v0 is described in
 	// https://github.com/coreos/torcx/blob/master/Documentation/schemas/profile-manifest-v0.md
-	profilePath := "../../fixtures/test-get-profile-v0.json"
-
-	if _, err := os.Stat(profilePath); err != nil {
-		t.Fatal(err)
+	// with each possible value for 'format'
+	testItems := []struct {
+		name     string
+		path     string
+		manifest ProfileManifestV0
+	}{
+		{
+			name:     "tgz",
+			path:     "../../fixtures/test-no-format-profile-v0.json",
+			manifest: testTgzManifest,
+		},
+		{
+			name:     "default",
+			path:     "../../fixtures/test-tgz-profile-v0.json",
+			manifest: testTgzManifest,
+		},
+		{
+			name:     "squashfs",
+			path:     "../../fixtures/test-squashfs-profile-v0.json",
+			manifest: testSquashfsManifest,
+		},
 	}
 
-	outManifest, err := getProfile(profilePath)
-	if err != nil {
-		t.Fatal(err)
-	}
+	for _, item := range testItems {
+		t.Run(item.name, func(t *testing.T) {
+			if _, err := os.Stat(item.path); err != nil {
+				t.Fatal(err)
+			}
 
-	if !reflect.DeepEqual(inManifest, outManifest) {
-		t.Fatalf("manifests do not match with each other.\nin:%v\nout:%v\n", inManifest, outManifest)
+			outManifest, err := getProfile(item.path)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if !reflect.DeepEqual(item.manifest, outManifest) {
+				t.Fatalf("manifests do not match with each other.\nin:%v\nout:%v\n", item.manifest, outManifest)
+			}
+		})
 	}
 }
 
@@ -64,7 +103,7 @@ func TestPutGetProfile(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := putProfile(profilePath, os.FileMode(0755), inManifest); err != nil {
+	if err := putProfile(profilePath, os.FileMode(0755), testTgzManifest); err != nil {
 		t.Fatal(err)
 	}
 
@@ -77,8 +116,8 @@ func TestPutGetProfile(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if !reflect.DeepEqual(inManifest, outManifest) {
-		t.Fatalf("manifests do not match with each other.\nin:%v\nout:%v\n", inManifest, outManifest)
+	if !reflect.DeepEqual(testTgzManifest, outManifest) {
+		t.Fatalf("manifests do not match with each other.\nin:%v\nout:%v\n", testTgzManifest, outManifest)
 	}
 }
 
