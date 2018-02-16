@@ -125,7 +125,7 @@ test: build-dirs
 ftest: build
 	@sh -c "                                                               \
 	        BUILDTAGS='$(BUILDTAGS)'                                       \
-	        CGO_ENABLED=0                                                  \
+	        CGO_ENABLED=1                                                  \
 	        ./scripts/ftest.sh                                             \
 	    "
 
