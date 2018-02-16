@@ -14,6 +14,11 @@
 
 package torcx
 
+import (
+	"encoding/json"
+	"fmt"
+)
+
 const (
 	// SealUpperProfile is the key label for user profile name
 	SealUpperProfile = "TORCX_UPPER_PROFILE"
@@ -72,7 +77,7 @@ type ProfileManifestV0 struct {
 	Value Images `json:"value"`
 }
 
-// Archive represents a .torcx.tgz on disk
+// Archive represents a .torcx.squashfs or .torcx.tgz on disk
 type Archive struct {
 	Image
 	Filepath string `json:"filepath"`
@@ -80,8 +85,59 @@ type Archive struct {
 
 // Image is an archive name + Reference
 type Image struct {
-	Name      string `json:"name"`
-	Reference string `json:"reference"`
+	Name      string      `json:"name"`
+	Reference string      `json:"reference"`
+	Format    ImageFormat `json:"format"`
+}
+
+// ImageFormat is a torcx archive format, either 'tgz' or 'squashfs'
+type ImageFormat string
+
+const (
+	// ImageFormatUnknown is the zero value of ImageFormat. It indicates the image format is unknown
+	ImageFormatUnknown ImageFormat = ""
+	// ImageFormatTgz indicates a tar-gzipped image
+	ImageFormatTgz = "tgz"
+	// ImageFormatSquashfs indicates a squashfs image archive
+	ImageFormatSquashfs = "squashfs"
+)
+
+// UnmarshalJSON unmarshals the "format" field of an "Image"
+func (imgf *ImageFormat) UnmarshalJSON(b []byte) error {
+	s := ""
+	if err := json.Unmarshal(b, &s); err != nil {
+		return err
+	}
+	switch s {
+	case ImageFormatTgz:
+		*imgf = ImageFormatTgz
+	case ImageFormatSquashfs:
+		*imgf = ImageFormatSquashfs
+	default:
+		return fmt.Errorf("could not unmarshal into ImageFormat: must be one of %q, %q", ImageFormatTgz, ImageFormatSquashfs)
+	}
+	return nil
+}
+
+// UnmarshalJSON unmarshals an Image, including defaulting the "format" field
+// to "tgz" if it was not set.
+func (img *Image) UnmarshalJSON(b []byte) error {
+	type imageAlias Image
+	var imgA imageAlias
+	if err := json.Unmarshal(b, &imgA); err != nil {
+		return err
+	}
+	if imgA.Format == ImageFormatUnknown {
+		// Default to tgz if it wasn't set
+		imgA.Format = ImageFormatTgz
+	}
+	*img = Image(imgA)
+	return nil
+}
+
+// FileSuffix returns the file extension this image format must have.
+func (imgf ImageFormat) FileSuffix() string {
+	return fmt.Sprintf(".torcx.%s", imgf)
 }
 
 type Images struct {

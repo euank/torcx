@@ -28,7 +28,7 @@ import (
 type StoreCache struct {
 	Paths []string
 
-	// The mapping of name + reference to .tgz file
+	// The mapping of name + reference to image archive
 	Images map[Image]Archive
 }
 
@@ -55,10 +55,17 @@ func NewStoreCache(paths []string) (StoreCache, error) {
 		if !inInfo.Mode().IsRegular() {
 			return nil
 		}
-		if !strings.HasSuffix(name, ".torcx.tgz") {
+		var imageFormat ImageFormat
+		for _, format := range []ImageFormat{ImageFormatTgz, ImageFormatSquashfs} {
+			if strings.HasSuffix(name, format.FileSuffix()) {
+				imageFormat = format
+				break
+			}
+		}
+		if imageFormat == ImageFormatUnknown {
 			return nil
 		}
-		baseName := strings.TrimSuffix(name, ".torcx.tgz")
+		baseName := strings.TrimSuffix(name, imageFormat.FileSuffix())
 		imageName := baseName
 		imageRef := DefaultTagRef
 		if strings.ContainsRune(baseName, ':') {
@@ -70,6 +77,7 @@ func NewStoreCache(paths []string) (StoreCache, error) {
 		image := Image{
 			Name:      imageName,
 			Reference: imageRef,
+			Format:    imageFormat,
 		}
 		archive := Archive{image, path}
 
