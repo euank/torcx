@@ -109,14 +109,29 @@ func (imgf *ImageFormat) UnmarshalJSON(b []byte) error {
 		return err
 	}
 	switch s {
-	case "", ImageFormatTgz:
-		// Defaulting for 'format' to 'tgz', backwards compatibility
+	case ImageFormatTgz:
 		*imgf = ImageFormatTgz
 	case ImageFormatSquashfs:
 		*imgf = ImageFormatSquashfs
 	default:
 		return fmt.Errorf("could not unmarshal into ImageFormat: must be one of %q, %q", ImageFormatTgz, ImageFormatSquashfs)
 	}
+	return nil
+}
+
+// UnmarshalJSON unmarshals an Image, including defaulting the "format" field
+// to "tgz" if it was not set.
+func (img *Image) UnmarshalJSON(b []byte) error {
+	type imageAlias Image
+	var imgA imageAlias
+	if err := json.Unmarshal(b, &imgA); err != nil {
+		return err
+	}
+	if imgA.Format == ImageFormatUnknown {
+		// Default to tgz if it wasn't set
+		imgA.Format = ImageFormatTgz
+	}
+	*img = Image(imgA)
 	return nil
 }
 
